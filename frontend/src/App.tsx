@@ -17,31 +17,33 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(5); // Repositories per page
+  const [pageSize] = useState(5);
   const [totalRepositories, setTotalRepositories] = useState(0);
 
+  const [searchQuery, setSearchQuery] = useState("");
   const [editingRepo, setEditingRepo] = useState<Repository | null>(null);
 
-  useEffect(() => {
-    const fetchRepositories = async () => {
-      setLoading(true);
-      setError(null); // Reset error state
-      try {
+  const fetchRepositories = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+        const queryParam = searchQuery ? `&query=${encodeURIComponent(searchQuery)}` : "";
         const response = await axios.get(
-          `http://127.0.0.1:8000/repositories/?skip=${(currentPage - 1) * pageSize}&limit=${pageSize}`
+            `http://127.0.0.1:8000/repositories/?skip=${(currentPage - 1) * pageSize}&limit=${pageSize}${queryParam}`
         );
         setRepositories(response.data.repositories);
         setTotalRepositories(response.data.total);
-      } catch (error) {
+    } catch (error) {
         setError("Failed to fetch repositories. Please try again.");
         toast.error("Failed to fetch repositories.");
-      } finally {
+    } finally {
         setLoading(false);
-      }
-    };
+    }
+  };
 
+  useEffect(() => {
     fetchRepositories();
-  }, [currentPage, pageSize]);
+  }, [currentPage, searchQuery]);
 
   const handleRepositoryAdded = (newRepo: Repository) => {
     setRepositories((prev) => [newRepo, ...prev]);
@@ -60,7 +62,7 @@ const App: React.FC = () => {
   };
 
   const handleEdit = (repo: Repository) => {
-    setEditingRepo(repo); // Set the current repository for editing
+    setEditingRepo(repo);
   };
 
   const handleSaveEdit = async (updatedRepo: Repository) => {
@@ -73,14 +75,20 @@ const App: React.FC = () => {
         prev.map((repo) => (repo.id === updatedRepo.id ? response.data : repo))
       );
       toast.success("Repository updated successfully!");
-      setEditingRepo(null); // Exit edit mode
+      setEditingRepo(null);
     } catch {
       toast.error("Failed to update repository. Please try again.");
     }
   };
 
   const handleCancelEdit = () => {
-    setEditingRepo(null); // Exit edit mode
+    setEditingRepo(null);
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1); // Reset page to 1 when a new search is performed
+    fetchRepositories();
   };
 
   return (
@@ -99,6 +107,15 @@ const App: React.FC = () => {
         </h1>
       </header>
       <main className="max-w-4xl mx-auto">
+        <form onSubmit={handleSearch} className="mb-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search repositories..."
+            className="w-full p-2 border rounded"
+          />
+        </form>
         <AddRepositoryForm onRepositoryAdded={handleRepositoryAdded} />
         <h2 className="text-xl font-semibold mt-8 mb-4">Repositories</h2>
         {loading ? (

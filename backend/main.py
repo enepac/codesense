@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from config import DATABASE_URL
 from models import Repository
 
@@ -44,14 +44,32 @@ class RepositoryResponse(RepositoryBase):
 async def get_repositories(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1),
+    query: str = Query(default=None, max_length=100),  # Allow None for query
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Repository).offset(skip).limit(limit))
+    # Build base query
+    base_query = select(Repository)
+
+    # If a search query is provided, filter by name or description
+    if query:
+        base_query = base_query.where(
+            (Repository.name.ilike(f"%{query}%")) |
+            (Repository.description.ilike(f"%{query}%"))
+        )
+
+    # Add pagination to the query
+    paginated_query = base_query.offset(skip).limit(limit)
+
+    # Execute the query
+    result = await db.execute(paginated_query)
     repositories = result.scalars().all()
 
-    total_count = await db.execute(select(func.count(Repository.id)))
+    # Fetch total count (with search filter if applicable)
+    total_query = select(func.count(Repository.id)).select_from(base_query.subquery())
+    total_count = await db.execute(total_query)
     total = total_count.scalar()
 
+    # Return the response
     return {
         "repositories": [
             {
@@ -64,6 +82,7 @@ async def get_repositories(
         ],
         "total": total,
     }
+
 
 @app.post("/repositories/", response_model=RepositoryResponse)
 async def create_repository(repo: RepositoryBase, db: AsyncSession = Depends(get_db)):
