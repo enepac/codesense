@@ -173,3 +173,24 @@ Delete a repository by ID.
 - Add user authentication and authorization.
 - Enhance the UI/UX for better usability.
 - Integrate CI/CD pipelines for deployment.
+
+DeepSeek API Integration:
+
+Detailed explanation of how the DeepSeek API was integrated.
+Include example use cases and API interactions.
+CRUD Operations for Repositories:
+
+Description of the endpoints (GET, POST, DELETE).
+Highlight the testing process and results.
+Search Feature:
+
+How the search functionality was implemented and tested.
+Include examples of search queries and their outputs.
+Environment Variable Management:
+
+Details on .env usage for securing sensitive information.
+Instructions for setting up the .env file.
+Error Handling and Logging Enhancements:
+
+Specific logging improvements for debugging.
+Examples of error responses.
