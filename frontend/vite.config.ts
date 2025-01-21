@@ -7,4 +7,7 @@ export default defineConfig({
     port: 3466,
     host: true, // Allows access from external devices if needed
   },
+  css: {
+    postcss: './postcss.config.js',
+  },
 });
